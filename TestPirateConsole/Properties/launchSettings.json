@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "TestPirateConsole": {
+      "commandName": "Project",
+      "commandLineArgs": "joker"
+    }
+  }
+}
