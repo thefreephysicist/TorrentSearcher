@@ -16,7 +16,7 @@ namespace ThePirateBay
 		/// <param name="url">the url of item</param>
 		public PirateItem(string title, string url)
 		{
-			ID = id++;
+			ID = ++id;
 			Title = title;
 			Url = url;
 		}
@@ -63,6 +63,9 @@ namespace ThePirateBay
 			internal set;
 		}
 
+		/// <summary>
+		/// Gets or set the size
+		/// </summary>
 		public string Size
 		{
 			get;

@@ -48,18 +48,31 @@ namespace ThePirateBay
 		/// </summary>
 		/// <param name="searchQuery">the search query</param>
 		/// <returns>A results model</returns>
-		public async Task<PirateBayModel> Search(Query searchQuery)
+		public async Task<PirateBayModel> Search(Query searchQuery, int maxPages = 3)
 		{
 			// construct the search url
-			var searchAddress = ConstructSearchUrl(searchQuery.SearchTerm);
 
+			var searchAddress = ConstructSearchUrl(searchQuery.SearchTerm, 1);
+
+			PirateItemCollection pirateItems = new PirateItemCollection();
 			// scrape the search page
-			PirateItemCollection pirateItems = await ScrapeSearchPage(searchAddress);
-
-			if (pirateItems is null)
+			for (int i = 0; i < maxPages; i++)
 			{
-				_logger.Log("Failed to get PirateItems");
-				return null;
+				PirateItemCollection pirateItemsPage = await ScrapeSearchPage(searchAddress);
+				if (pirateItems is null)
+				{
+					// something has gone wrong
+					_logger.Log("Failed to get PirateItems");
+					return null;
+				}
+
+				if (pirateItems.Count == 0)
+				{
+					// we're done searching as there are no more results
+					break;
+				}
+
+				pirateItems.AddRange(pirateItemsPage);
 			}
 
 			PirateBayModel results = new PirateBayModel()
@@ -69,7 +82,6 @@ namespace ThePirateBay
 			};
 
 			PirateBayResults = results;
-
 			return results;
 		}
 
@@ -78,7 +90,7 @@ namespace ThePirateBay
 		/// </summary>
 		/// <param name="address">the search address</param>
 		/// <returns>the IDocument for the page</returns>
-		private async Task<IDocument> GetPage(string address) 
+		private async Task<IDocument> DownloadPage(string address) 
 		{
 			var config = Configuration.Default.WithDefaultLoader();
 
@@ -96,7 +108,7 @@ namespace ThePirateBay
 		/// <returns>the pirate items</returns>
 		private async Task<PirateItemCollection> ScrapeSearchPage(string address, bool getMagnetLinks = false)
 		{
-			IDocument document = await GetPage(address);
+			IDocument document = await DownloadPage(address);
 
 			// get the table and then get all the rows
 			var table = document.GetElementById("searchResult");
@@ -110,7 +122,7 @@ namespace ThePirateBay
 			{
 				var titleAndLink = ParseTitleAndUrl(row);
 				
-				// if null, not a valid torrent row
+				// if null, not a valid torrent row (first row is not a valid row)
 				if (!titleAndLink.HasValue)
 				{
 					continue;
@@ -121,7 +133,6 @@ namespace ThePirateBay
 				var seedersAndLeechers = ParseSeedersAndLeechers(row);
 
 				PirateItem pirateItem = new PirateItem(titleAndLink.Value.title, titleAndLink.Value.url);
-
 				if (size != null)
 				{
 					pirateItem.Size = size;
@@ -245,10 +256,10 @@ namespace ThePirateBay
 		/// </summary>
 		/// <param name="searchTerm">the search term</param>
 		/// <returns>the constructer string</returns>
-		private string ConstructSearchUrl(string searchTerm)
+		private string ConstructSearchUrl(string searchTerm, int pageNumber = 1)
 		{
 			var search = Uri.EscapeUriString(searchTerm);
-			string address = Flurl.Url.Combine(Url, "search", search, "1", "99", "0");
+			string address = Flurl.Url.Combine(Url, "search", search, pageNumber.ToString(), "99", "0");
 			return address;
 		}
 		
