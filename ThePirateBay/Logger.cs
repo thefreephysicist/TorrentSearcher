@@ -4,27 +4,23 @@ using System.Text;
 
 namespace ThePirateBay
 {
-	class Logger
+	public class Logger : ILogger
 	{
-		static Logger()
+		public Logger() 
 		{
 			Logs = new List<string>();
-		}
-
-		private Logger()
-		{
 		}
 
 		/// <summary>
 		/// Adds a log to the logger
 		/// </summary>
 		/// <param name="s">the log string</param>
-		public static void Log(string s)
+		public void Log(string s)
 		{
 			Logs.Add(s);
 		}
 
-		private static IList<string> Logs
+		private IList<string> Logs
 		{
 			get;
 			set;

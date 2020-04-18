@@ -1,4 +1,6 @@
-﻿using System;
+﻿using ConsoleTables;
+using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using ThePirateBay;
 
@@ -16,18 +18,50 @@ namespace TestPirateConsole
 			}
 
 			string url = "https://thepiratebay.zone/";
-			PirateBayParser p = new PirateBayParser(url);
-			await p.Search(args[0]);
+			ILogger logger = new Logger();
+			PirateBayParser p = new PirateBayParser(url, logger);
+
+			Query query = new Query()
+			{
+				SearchTerm = args[0]
+			};
+
+			await p.Search(query);
+
+			PrintResults(p.PirateBayResults.PirateItems);
 
 			Console.ReadLine();
-			// Test().GetAwaiter().GetResult();
 		}
 
-		private static async Task Test()
+		private static void PrintResults(IEnumerable<PirateItem> pirateItems)
 		{
-			string url = "https://thepiratebay.zone/";
-			PirateBayParser p = new PirateBayParser(url);
-			await p.Search("joker");
+			string[] headers = new string[]
+			{
+				"ID",
+				"Title",
+				"Size",
+				"SE",
+				"LE"
+			};
+
+			// create table
+			var table = new ConsoleTable(headers);
+
+			foreach(var pirateItem in pirateItems)
+			{
+				string[] row = new string[]
+				{
+					pirateItem.ID.ToString(),
+					pirateItem.Title,
+					pirateItem.Size,
+					pirateItem.SeedersCount.ToString(),
+					pirateItem.LeechersCount.ToString()
+				};
+
+				table.AddRow(row);
+			}
+
+			Console.WriteLine(table);
 		}
 	}
 }
